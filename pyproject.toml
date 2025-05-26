@@ -1,0 +1,22 @@
+[project]
+name = "base-django"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "django>=5.2.1",
+    "django-environ>=0.12.0",
+    "django-guardian>=3.0.0",
+    "django-ninja>=1.4.1",
+    "psycopg[binary]>=3.2.9",
+    "pydantic[email]>=2.11.5",
+    "pyjwt>=2.10.1",
+]
+
+[dependency-groups]
+dev = [
+    "debugpy>=1.8.14",
+    "pytest>=8.3.5",
+    "pytest-django>=4.11.1",
+]
