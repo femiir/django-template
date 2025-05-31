@@ -10,15 +10,16 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
-from pathlib import Path
-import environ
 from datetime import timedelta
+from pathlib import Path
+
+import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-ENV_PATH = BASE_DIR / ".env"
+ENV_PATH = BASE_DIR.parent / '.env'
 
 env = environ.Env()
 environ.Env.read_env(ENV_PATH)
@@ -28,78 +29,76 @@ environ.Env.read_env(ENV_PATH)
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = env("SECRET_KEY")
+SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env.bool("DEBUG")
+DEBUG = env.bool('DEBUG')
 
-ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS')
 
 
 # Application definition
 
 INSTALLED_APPS = [
-    "django.contrib.admin",
-    "django.contrib.auth",
-    "django.contrib.contenttypes",
-    "django.contrib.sessions",
-    "django.contrib.messages",
-    "django.contrib.staticfiles",
-    # Third-party apps
-    "guardian",
-    # Local apps
-    "accounts.apps.AccountsConfig",
+	'django.contrib.admin',
+	'django.contrib.auth',
+	'django.contrib.contenttypes',
+	'django.contrib.sessions',
+	'django.contrib.messages',
+	'django.contrib.staticfiles',
+	# Third-party apps
+	'guardian',
+	'corsheaders',
+	'procrastinate.contrib.django',
+	# Local apps
+	'accounts.apps.AccountsConfig',
+	'otp.apps.OtpConfig',
 ]
 
 MIDDLEWARE = [
-    "django.middleware.security.SecurityMiddleware",
-    "django.contrib.sessions.middleware.SessionMiddleware",
-    "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "django.contrib.messages.middleware.MessageMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+	'django.middleware.security.SecurityMiddleware',
+	'django.contrib.sessions.middleware.SessionMiddleware',
+	'corsheaders.middleware.CorsMiddleware',
+	'django.middleware.common.CommonMiddleware',
+	'django.middleware.csrf.CsrfViewMiddleware',
+	'django.contrib.auth.middleware.AuthenticationMiddleware',
+	'django.contrib.messages.middleware.MessageMiddleware',
+	'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = "config.urls"
+ROOT_URLCONF = 'config.urls'
 
 TEMPLATES = [
-    {
-        "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
-        "APP_DIRS": True,
-        "OPTIONS": {
-            "context_processors": [
-                "django.template.context_processors.request",
-                "django.contrib.auth.context_processors.auth",
-                "django.contrib.messages.context_processors.messages",
-            ],
-        },
-    },
+	{
+		'BACKEND': 'django.template.backends.django.DjangoTemplates',
+		'DIRS': [BASE_DIR / 'templates'],
+		'APP_DIRS': True,
+		'OPTIONS': {
+			'context_processors': [
+				'django.template.context_processors.request',
+				'django.contrib.auth.context_processors.auth',
+				'django.contrib.messages.context_processors.messages',
+			],
+		},
+	},
 ]
 
-WSGI_APPLICATION = "config.wsgi.application"
-ASGI_APPLICATION = "config.asgi.application"
+WSGI_APPLICATION = 'config.wsgi.application'
+ASGI_APPLICATION = 'config.asgi.application'
 
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": env("POSTGRES_DB"),
-        "USER": env("POSTGRES_USER"),
-        "PASSWORD": env("POSTGRES_PASSWORD"),
-        "HOST": env("POSTGRES_HOST"),
-    }
+	'default': {
+		'ENGINE': 'django.db.backends.postgresql',
+		'NAME': env('POSTGRES_DB'),
+		'USER': env('POSTGRES_USER'),
+		'PASSWORD': env('POSTGRES_PASSWORD'),
+		'HOST': env('POSTGRES_HOST'),
+	}
 }
 
 
@@ -107,27 +106,27 @@ DATABASES = {
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
+	{
+		'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+	},
+	{
+		'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+	},
+	{
+		'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+	},
+	{
+		'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+	},
 ]
 
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = "en-us"
+LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = "UTC"
+TIME_ZONE = 'UTC'
 
 USE_I18N = True
 
@@ -137,32 +136,77 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = "static/"
+STATIC_URL = 'static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 # Auth Backends
 AUTHENTICATION_BACKENDS = [
-    "django.contrib.auth.backends.ModelBackend",
-    "guardian.backends.ObjectPermissionBackend",
+	'django.contrib.auth.backends.ModelBackend',
+	'guardian.backends.ObjectPermissionBackend',
 ]
 
 # JWT settings
-JWT_REFRESH_TOKEN_LIFETIME = timedelta(days=env.int("JWT_REFRESH_TOKEN_LIFETIME"))
-JWT_ACCESS_TOKEN_LIFETIME = timedelta(hours=env.int("JWT_ACCESS_TOKEN_LIFETIME"))
+JWT_REFRESH_TOKEN_LIFETIME = timedelta(days=env.int('JWT_REFRESH_TOKEN_LIFETIME'))
+JWT_ACCESS_TOKEN_LIFETIME = timedelta(hours=env.int('JWT_ACCESS_TOKEN_LIFETIME'))
 TOKEN_CLAIM_USER_ATTRIBUTE_MAP = {
-    "user_id": "id",
-    "email": "email",
-    "is_active": "is_active",
-    "is_staff": "is_staff",
-    "is_superuser": "is_superuser",
-    "user_type": "user_type",
-    # "last_login": "last_login",
-    # "created_at": "date_joined",
+	'user_id': 'id',
+	'email': 'email',
+	'is_active': 'is_active',
+	'is_staff': 'is_staff',
+	'is_superuser': 'is_superuser',
+	'user_type': 'user_type',
+	'last_login': 'last_login',
 }
 # Custom user model
-AUTH_USER_MODEL = "accounts.User"
+AUTH_USER_MODEL = 'accounts.User'
+
+# mail settings
+RESEND_API_KEY = env('RESEND_API_KEY')
+FROM_EMAIL = env('RESEND_FROM_EMAIL', default='no-reply@femiir.dev')
+REPLY_TO = env('REPLY_TO', default='feemiiir@gmail.com')
+
+
+# CORS settings
+CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[])
+CORS_ALLOWED_ORIGIN_REGEXES = env.list('CORS_ALLOWED_ORIGIN_REGEXES')
+
+
+# logging settings
+LOGGING = {
+	'version': 1,
+	'disable_existing_loggers': False,
+	'formatters': {
+		'simple': {
+			'format': '{levelname} {asctime} {module} {message}',
+			'style': '{',
+		},
+		'procrastinate': {'format': '%(asctime)s %(levelname)-7s %(name)s %(message)s'},
+	},
+	'handlers': {
+		'console': {
+			'class': 'logging.StreamHandler',
+			'formatter': 'simple',
+		},
+		'procrastinate': {
+			'level': 'DEBUG',
+			'class': 'logging.StreamHandler',
+			'formatter': 'procrastinate',
+		},
+	},
+	'loggers': {
+		'django': {
+			'handlers': ['console'],
+			'level': 'INFO',
+		},
+		'procrastinate': {
+			'handlers': ['procrastinate'],
+			'level': 'DEBUG',
+			'propagate': False,
+		},
+	},
+}

@@ -6,12 +6,15 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "django>=5.2.1",
+    "django-cors-headers>=4.7.0",
     "django-environ>=0.12.0",
     "django-guardian>=3.0.0",
     "django-ninja>=1.4.1",
+    "procrastinate[django]>=3.2.2",
     "psycopg[binary]>=3.2.9",
     "pydantic[email]>=2.11.5",
     "pyjwt>=2.10.1",
+    "resend>=2.10.0",
 ]
 
 [dependency-groups]
@@ -20,3 +23,58 @@ dev = [
     "pytest>=8.3.5",
     "pytest-django>=4.11.1",
 ]
+
+[tool.ruff]
+line-length = 88
+indent-width = 4
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "C",   # flake8-comprehensions
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+    "RUF", # ruff-specific rules
+]
+fixable = ["ALL"]
+unfixable = []
+
+ignore = [
+    "E501",  # line too long
+    "B008",  # do not perform function call in argument defaults
+    "RUF012"
+]
+
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+force-wrap-aliases = true
+known-first-party = ["config", "utils", "security"]
+section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
+split-on-trailing-comma = true
+relative-imports-order = "closest-to-furthest"
+force-sort-within-sections = true
+order-by-type = true
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "tab"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+docstring-code-format = true
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+"tests/*" = ["S101"]
+
+[tool.ruff.lint.flake8-quotes]
+docstring-quotes = "double"
+inline-quotes = "single"
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"

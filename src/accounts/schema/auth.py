@@ -3,6 +3,7 @@ from ninja import Schema
 
 # from accounts.models import User, VendorProfile, CustomerProfile
 from pydantic import EmailStr
+from accounts.models import UserType
 
 
 class UserIn(Schema):
@@ -11,6 +12,7 @@ class UserIn(Schema):
     user_type: str
     full_name: str
     phone_number: str
+    user_type: UserType
 
 
 class Login(Schema):

@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Base Django{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    {% block head %}{% endblock %}
+</head>
+<body style="background-color:#f9fafb; color:#1f2937; font-family:Arial,sans-serif; margin:0; padding:0;">
+    <div style="min-height:100vh; display:flex; align-items:center; justify-content:center;">
+        <div style="width:100%; max-width:32rem; padding:1.5rem; background:#fff; border-radius:0.5rem; box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+            {% block content %}
+            <!-- Content goes here -->
+            {% endblock %}
+        </div>
+    </div>
+</body>
+</html>

@@ -35,6 +35,6 @@ RUN useradd --create-home femiir
 COPY --from=builder --chown=femiir:femiir /app /app
 ENV PATH="/app/.venv/bin:$PATH" 
 USER femiir
-EXPOSE 80
+EXPOSE 8000
 WORKDIR /app/src
 CMD ["sh", "/app/entrypoint.sh"]
