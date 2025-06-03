@@ -12,6 +12,7 @@ from common.exception_handlers import custom_exception_handler
 from ninja.pagination import RouterPaginated
 
 from .routers import router_list
+from tokens.jwt.auth import HttpJwtAuth
 
 api = NinjaAPI(
 	title='Backend API',
@@ -20,6 +21,7 @@ api = NinjaAPI(
 	docs_url='/',
 	urls_namespace='backend',
 	default_router=RouterPaginated(),
+	auth=HttpJwtAuth(),
 )
 
 api.add_exception_handler(AuthenticationError, custom_exception_handler)

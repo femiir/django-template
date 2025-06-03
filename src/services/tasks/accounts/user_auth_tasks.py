@@ -5,7 +5,7 @@ from procrastinate.contrib.django import app
 
 from otp.models import OtpType
 from services.mail.email import render_template, send_email
-from services.otp.otp_managers import create_otp
+from common.otp_managers import create_otp
 
 User = get_user_model()
 

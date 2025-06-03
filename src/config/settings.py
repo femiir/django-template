@@ -53,6 +53,7 @@ INSTALLED_APPS = [
 	# Local apps
 	'accounts.apps.AccountsConfig',
 	'otp.apps.OtpConfig',
+	'tokens.apps.TokensConfig',
 ]
 
 MIDDLEWARE = [
@@ -156,12 +157,14 @@ JWT_ACCESS_TOKEN_LIFETIME = timedelta(hours=env.int('JWT_ACCESS_TOKEN_LIFETIME')
 TOKEN_CLAIM_USER_ATTRIBUTE_MAP = {
 	'user_id': 'id',
 	'email': 'email',
-	'is_active': 'is_active',
-	'is_staff': 'is_staff',
-	'is_superuser': 'is_superuser',
-	'user_type': 'user_type',
+	# 'is_active': 'is_active',
+	# 'is_staff': 'is_staff',
+	# 'is_superuser': 'is_superuser',
+	# 'user_type': 'user_type',
 	'last_login': 'last_login',
 }
+JWT_JTI = env('JWT_JTI')
+JWT_ALGORITHM = env('JWT_ALGORITHM')
 # Custom user model
 AUTH_USER_MODEL = 'accounts.User'
 

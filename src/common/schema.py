@@ -1,7 +1,7 @@
 # src/common/responses.py
 
 from typing import Any, Optional, Generic, TypeVar
-from pydantic.generics import GenericModel
+from pydantic import BaseModel
 from ninja import Schema
 
 
@@ -16,7 +16,7 @@ class APIResponse(Schema):
 T = TypeVar('T')
 
 
-class APIResponseWithData(GenericModel, Generic[T]):
+class APIResponseWithData(BaseModel, Generic[T]):
 	success: bool = False
 	status_code: int
 	message: Optional[Any] = None

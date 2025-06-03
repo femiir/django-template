@@ -6,9 +6,9 @@ from .token import get_user_from_token
 
 
 class HttpJwtAuth(HttpBearer):
-    async def authenticate(self, request: HttpRequest, token: str) -> bool:
+    def authenticate(self, request: HttpRequest, token: str) -> bool:
         token = self.decode_authorization(request.headers["Authorization"])
-        user = await get_user_from_token(token)
+        user =  get_user_from_token(token)
         if user.is_authenticated:
             request.user = user
         return True

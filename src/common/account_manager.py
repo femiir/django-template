@@ -37,3 +37,12 @@ class CustomUserManager(BaseUserManager):
         extra_fields.setdefault("is_superuser", True)
         return self.create_user(email, password, **extra_fields)
     
+
+def get_user_profile_instance(user):
+	if user.user_type == 'customer' and hasattr(user, 'customerprofile'):
+		return user.customerprofile
+	elif user.user_type == 'vendor' and hasattr(user, 'vendorprofile'):
+		return user.vendorprofile
+	elif user.user_type == 'admin' and hasattr(user, 'adminprofile'):
+		return user.adminprofile
+	return None
