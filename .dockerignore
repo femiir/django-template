@@ -33,3 +33,5 @@ staticfiles/
 .env.*
 local_settings.py
 secrets.json
+bucket/
+complex_state.py

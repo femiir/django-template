@@ -1,7 +1,5 @@
-from ninja import ModelSchema, Schema, FilterSchema
+from ninja import Field, FilterSchema, ModelSchema, Schema
 from pydantic import EmailStr
-from ninja import FilterSchema, Field
-from typing import Optional
 
 from accounts.models import AdminProfile, CustomerProfile, User, UserType, VendorProfile
 
@@ -41,6 +39,7 @@ class PasswordResetRequest(Schema):
 
 class PasswordResetVerify(Schema):
 	otp: str
+	email: EmailStr
 	new_password: str
 
 
@@ -77,13 +76,19 @@ class UserUpdate(Schema):
 	phone_number: str
 	profile: CustomerProfileOut | VendorProfileOut | AdminProfileOut | None = None
 
+
 class UserFilter(FilterSchema):
-	email: Optional[str] = Field(None, q='email__icontains', description="Filter by email")
-	full_name: Optional[str] = Field(None, q='full_name__icontains', description="Filter by full name")
-	phone_number: Optional[str] = Field(None, q='phone_number__icontains', description="Filter by phone number")
-	user_type: Optional[UserType] = Field(None, description="Filter by user type")
-	is_active: Optional[bool] = Field(None, description="Filter by active status")
-	is_verified: Optional[bool] = Field(None, description="Filter by verification status")
+	email: str | None = Field(None, q='email__icontains', description='Filter by email')
+	full_name: str | None = Field(None, q='full_name__icontains', description='Filter by full name')
+	phone_number: str | None = Field(None, q='phone_number__icontains', description='Filter by phone number')
+	user_type: UserType | None = Field(None, description='Filter by user type')
+	is_active: bool | None = Field(None, description='Filter by active status')
+	is_verified: bool | None = Field(None, description='Filter by verification status')
 
 	class Config:
 		expression_connector = 'OR'
+
+
+class AccountDeleteVerify(Schema):
+	otp: str
+	email: EmailStr

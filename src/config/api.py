@@ -12,7 +12,7 @@ from common.exception_handlers import custom_exception_handler
 from ninja.pagination import RouterPaginated
 
 from .routers import router_list
-from tokens.jwt.auth import HttpJwtAuth
+from middlewares.jwt.auth import HttpJwtAuth
 
 api = NinjaAPI(
 	title='Backend API',

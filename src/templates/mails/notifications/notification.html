@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Notification</title>
+</head>
+<body style="font-family: Arial, sans-serif; background-color: #f4f4f7; margin: 0; padding: 0;">
+    <div style="max-width: 400px; margin: 40px auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); padding: 24px;">
+        <h2 style="color: #1a73e8;">Notification</h2>
+        <p>Hello {{ user_name }},</p>
+        <p>{{ message }}</p>
+        {% if extra_info %}
+            <p>{{ extra_info }}</p>
+        {% endif %}
+    </div>
+</body>
+</html>

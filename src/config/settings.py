@@ -22,7 +22,23 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 ENV_PATH = BASE_DIR.parent / '.env'
 
 env = environ.Env()
-environ.Env.read_env(ENV_PATH)
+
+# Try to load .env file silently - don't error if not found
+try:
+	# Check multiple possible locations
+	env_paths = [
+		ENV_PATH,  # /app/.env (Docker)
+		BASE_DIR / '.env',  # /app/src/.env
+		Path('/app/.env'),  # Explicit Docker path
+	]
+
+	for path in env_paths:
+		if path.exists():
+			environ.Env.read_env(path)
+			break
+except Exception:
+	# Environment variables will come from Docker Compose
+	pass
 
 
 # Quick-start development settings - unsuitable for production
@@ -40,6 +56,7 @@ ALLOWED_HOSTS = env.list('ALLOWED_HOSTS')
 # Application definition
 
 INSTALLED_APPS = [
+	'daphne',
 	'django.contrib.admin',
 	'django.contrib.auth',
 	'django.contrib.contenttypes',
@@ -47,17 +64,21 @@ INSTALLED_APPS = [
 	'django.contrib.messages',
 	'django.contrib.staticfiles',
 	# Third-party apps
+	'channels',
 	'guardian',
 	'corsheaders',
 	'procrastinate.contrib.django',
 	# Local apps
+	'common.apps.CommonConfig',
 	'accounts.apps.AccountsConfig',
 	'otp.apps.OtpConfig',
 	'tokens.apps.TokensConfig',
+	'notifications.apps.NotificationsConfig',
 ]
 
 MIDDLEWARE = [
 	'django.middleware.security.SecurityMiddleware',
+	'whitenoise.middleware.WhiteNoiseMiddleware',
 	'django.contrib.sessions.middleware.SessionMiddleware',
 	'corsheaders.middleware.CorsMiddleware',
 	'django.middleware.common.CommonMiddleware',
@@ -138,6 +159,24 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'bucket' / 'staticfiles'
+STATICFILES_DIRS = [
+		BASE_DIR / 'static',
+	]
+
+
+MEDIA_URL = 'media/'
+MEDIA_ROOT = BASE_DIR / 'bucket' / 'media'
+
+STORAGES = {
+	'default': {
+		'BACKEND': 'django.core.files.storage.FileSystemStorage',
+	},
+	'staticfiles': {
+		'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+	},
+}
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -185,31 +224,173 @@ LOGGING = {
 	'disable_existing_loggers': False,
 	'formatters': {
 		'simple': {
-			'format': '{levelname} {asctime} {module} {message}',
+			'format': '{asctime} 🐍 [{levelname}] {message}',
 			'style': '{',
+			'datefmt': '%H:%M:%S',
 		},
-		'procrastinate': {'format': '%(asctime)s %(levelname)-7s %(name)s %(message)s'},
+		'procrastinate': {
+			'format': '{asctime} 🔄 [{levelname}] {message}',
+			'style': '{',
+			'datefmt': '%H:%M:%S',
+		},
+		'websocket': {
+			'format': '{asctime} 🔌 [{levelname}] {message}',
+			'style': '{',
+			'datefmt': '%H:%M:%S',
+		},
 	},
 	'handlers': {
 		'console': {
 			'class': 'logging.StreamHandler',
 			'formatter': 'simple',
 		},
-		'procrastinate': {
-			'level': 'DEBUG',
+		'procrastinate_console': {
+			'level': 'INFO',
 			'class': 'logging.StreamHandler',
 			'formatter': 'procrastinate',
+		},
+		'websocket_console': {
+			'class': 'logging.StreamHandler',
+			'formatter': 'websocket',
 		},
 	},
 	'loggers': {
 		'django': {
 			'handlers': ['console'],
 			'level': 'INFO',
-		},
-		'procrastinate': {
-			'handlers': ['procrastinate'],
-			'level': 'DEBUG',
 			'propagate': False,
+		},
+		# Background Tasks
+		'procrastinate': {
+			'handlers': ['procrastinate_console'],
+			'level': 'INFO',
+			'propagate': False,
+		},
+		# WebSocket & Channels
+		'channels': {
+			'handlers': ['websocket_console'],
+			'level': 'INFO',
+			'propagate': False,
+		},
+		'notifications.consumers': {
+			'handlers': ['websocket_console'],
+			'level': 'DEBUG' if DEBUG else 'INFO',
+			'propagate': False,
+		},
+		# Server & Infrastructure
+		'daphne': {
+			'handlers': ['console'],
+			'level': 'WARNING',
+			'propagate': False,
+		},
+		# 'twisted': {
+		# 	'handlers': ['console'],
+		# 	'level': 'ERROR',
+		# 	'propagate': False,
+		# },
+	},
+}
+
+FRONTEND_URL = env('FRONTEND_URL')
+
+# Twilio settings
+TWILIO_ACCOUNT_SID = env('TWILIO_ACCOUNT_SID')
+TWILIO_AUTH_TOKEN = env('TWILIO_AUTH_TOKEN')
+TWILIO_PHONE_NUMBER = env('TWILIO_PHONE_NUMBER')
+
+
+REDIS_URL = env('REDIS_URL')
+REDIS_CACHE_URL = env('REDIS_CACHE_URL')
+REDIS_SESSIONS_URL = env('REDIS_SESSIONS_URL')
+
+# Channels settings
+CHANNEL_LAYERS = {
+	'default': {
+		'BACKEND': 'channels_redis.core.RedisChannelLayer',
+		'CONFIG': {
+			'hosts': [REDIS_URL],
 		},
 	},
 }
+
+
+CACHES = {
+	'default': {
+		'BACKEND': 'django_redis.cache.RedisCache',
+		'LOCATION': REDIS_CACHE_URL,
+		'OPTIONS': {
+			'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+			'CONNECTION_POOL_KWARGS': {
+				'max_connections': 50,
+				'retry_on_timeout': True,
+				'socket_keepalive': True,
+				'socket_keepalive_options': {},
+			},
+			'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',
+			'SERIALIZER': 'django_redis.serializers.json.JSONSerializer',
+			'IGNORE_EXCEPTIONS': True,  # Don't break site if Redis is down
+		},
+		'KEY_PREFIX': 'django_cache',
+		'VERSION': 1,
+		'TIMEOUT': 3600,  # 1 hour
+	},
+	'sessions': {
+		'BACKEND': 'django_redis.cache.RedisCache',
+		'LOCATION': REDIS_SESSIONS_URL,
+		'OPTIONS': {
+			'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+			'CONNECTION_POOL_KWARGS': {
+				'max_connections': 20,
+				'retry_on_timeout': True,
+				'socket_keepalive': True,
+			},
+			'IGNORE_EXCEPTIONS': True,
+		},
+		'KEY_PREFIX': 'session',
+		'TIMEOUT': 1209600,  # 2 weeks
+	},
+	'user_state': {
+		'BACKEND': 'django_redis.cache.RedisCache',
+		'LOCATION': REDIS_URL,  # Same as channels for user state
+		'OPTIONS': {
+			'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+			'CONNECTION_POOL_KWARGS': {
+				'max_connections': 30,
+				'retry_on_timeout': True,
+			},
+		},
+		'KEY_PREFIX': 'user_state',
+		'TIMEOUT': 300,  # 5 minutes (for online status)
+	},
+}
+
+# === Session Configuration (Production Ready) ===
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+SESSION_CACHE_ALIAS = 'sessions'  # Use dedicated sessions cache
+
+# Session Security Settings
+SESSION_COOKIE_NAME = 'sessionid'
+SESSION_COOKIE_AGE = 1209600  # 2 weeks (in seconds)
+SESSION_COOKIE_DOMAIN = None  # Use current domain
+SESSION_COOKIE_SECURE = not DEBUG  # HTTPS only in production
+SESSION_COOKIE_HTTPONLY = True  # No JavaScript access
+SESSION_COOKIE_SAMESITE = 'Lax'  # CSRF protection
+
+# Session Behavior
+SESSION_SAVE_EVERY_REQUEST = False  # Only save when modified (performance)
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Persist sessions
+SESSION_COOKIE_PATH = '/'
+
+# === Environment-Specific Overrides ===
+if DEBUG:
+	# Development settings
+	SESSION_COOKIE_SECURE = False
+	CACHES['default']['OPTIONS']['IGNORE_EXCEPTIONS'] = False
+	SESSION_SAVE_EVERY_REQUEST = True  # More aggressive saving for dev
+else:
+	# Production settings
+	SESSION_COOKIE_SECURE = True
+	SESSION_COOKIE_DOMAIN = env('SESSION_COOKIE_DOMAIN', default=None)
+
+	# Add session cleanup middleware for production
+	MIDDLEWARE.insert(2, 'middlewares.session_cleanup.SessionCleanupMiddleware')

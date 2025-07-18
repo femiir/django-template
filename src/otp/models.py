@@ -1,20 +1,46 @@
-from django.db import models
-from common.base_model import TimeStampedSoftDeleteModel
-from django.utils import timezone
 from datetime import timedelta
+
+from django.db import models
+from django.utils import timezone
+
+from common.base_model import TimeStampedSoftDeleteModel
 
 # Create your models here.
 
+
 class OtpType(models.TextChoices):
-    SIGNUP = 'signup', 'Signup'
-    LOGIN = 'login', 'Login'
-    PASSWORD_RESET = 'password_reset', 'Password Reset'
+	SIGNUP = 'signup', 'Signup'
+	PASSWORD_RESET = 'password_reset', 'Password Reset'
+	RESEND = 'resend', 'Resend OTP'
+	ACCOUNT_DELETE = 'account_delete', 'Account Delete'
+	ACCOUNT_RESTORE = 'account_restore', 'Account Restore'
+	ACCOUNT_DELETION_CONFIRMATION = (
+		'account_deletion_confirmation',
+		'Account Deletion Confirmation',
+	)
+
+	@classmethod
+	def get_template(cls, otp_type: str) -> str:
+		"""
+		Get the email template associated with the given OTP type.
+		"""
+		template_mapping = {
+			cls.SIGNUP: 'mails/otp/signup_mail.html',
+			cls.PASSWORD_RESET: 'mails/otp/password_reset.html',
+			cls.RESEND: 'mails/otp/otp_mail.html',
+			cls.ACCOUNT_DELETE: 'mails/otp/account_delete_mail.html',
+			cls.ACCOUNT_RESTORE: 'mails/otp/account_restore_mail.html',
+			cls.ACCOUNT_DELETION_CONFIRMATION: 'mails/otp/account_deletion_confirmation_mail.html',
+		}
+		
+		return template_mapping.get(otp_type)
+
 
 class Otp(TimeStampedSoftDeleteModel):
 	user = models.ForeignKey('accounts.User', on_delete=models.CASCADE)
 	otp_code = models.CharField(max_length=6)
 	otp_type = models.CharField(
-		max_length=20, choices=OtpType.choices, default=OtpType.SIGNUP
+		max_length=50, choices=OtpType.choices, default=OtpType.SIGNUP
 	)
 	is_used = models.BooleanField(default=False)
 	expires_at = models.DateTimeField()
@@ -53,4 +79,3 @@ class Otp(TimeStampedSoftDeleteModel):
 		if not self.expires_at:
 			self.expires_at = self.get_expiration_time()
 		super().save(*args, **kwargs)
-

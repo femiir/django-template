@@ -1,22 +1,32 @@
+"""
+# # DEPRECATED: Use get_obtain_token_pair() instead
+# def get_refresh_token_for_user(user) -> tuple[str, dict]:
+# 	payload = get_token_payload_for_user(user)
+# 	token, payload_data = encode_token(
+# 		payload, TokenTypes.REFRESH, json_encoder=TokenUserEncoder
+# 	)
+
+# 	return token, payload_data
+
+
+# # DEPRECATED: Use get_obtain_token_pair() instead
+# def get_access_token_for_user(user) -> tuple[str, dict]:
+# 	payload = get_token_payload_for_user(user)
+# 	token, payload_data = encode_token(
+# 		payload, TokenTypes.ACCESS, json_encoder=TokenUserEncoder
+# 	)
+# 	return token, payload_data
+
+
+"""
+
 from datetime import datetime
 from enum import Enum
-from json import JSONEncoder
+from django.core.serializers.json import DjangoJSONEncoder
 from typing import Any
 from uuid import UUID, uuid4
 
 import jwt
-from django.conf import settings
-from django.contrib.auth import get_user_model
-from django.contrib.auth.models import AbstractBaseUser
-from django.core.serializers.json import DjangoJSONEncoder
-from django.utils import timezone
-from django.utils.timezone import make_aware
-from jwt import ExpiredSignatureError, InvalidKeyError, InvalidTokenError, PyJWTError
-from ninja.errors import AuthenticationError
-
-from tokens.models import BlacklistedToken, TrackedToken
-
-User = get_user_model()
 
 
 class TokenTypes(str, Enum):
@@ -28,43 +38,23 @@ class TokenUserEncoder(DjangoJSONEncoder):
 	def default(self, o: Any) -> Any:
 		if isinstance(o, UUID):
 			return str(o)
-
 		return super().default(o)
 
 
-# DEPRECATED: Use get_obtain_token_pair() instead
-def get_refresh_token_for_user(user: AbstractBaseUser) -> tuple[str, dict]:
-	payload = get_token_payload_for_user(user)
-	token, payload_data = encode_token(
-		payload, TokenTypes.REFRESH, json_encoder=TokenUserEncoder
-	)
+def get_token_payload_for_user(user) -> dict:
+	from django.conf import settings
 
-	return token, payload_data
-
-
-# DEPRECATED: Use get_obtain_token_pair() instead
-def get_access_token_for_user(user: AbstractBaseUser) -> tuple[str, dict]:
-	payload = get_token_payload_for_user(user)
-	token, payload_data = encode_token(
-		payload, TokenTypes.ACCESS, json_encoder=TokenUserEncoder
-	)
-	return token, payload_data
-
-
-def get_token_payload_for_user(user: AbstractBaseUser) -> dict:
 	return {
-		claim: getattr(user, user_attr)
-		if isinstance(user_attr, str)
-		else user_attr(user)
+		claim: getattr(user, user_attr) if isinstance(user_attr, str) else user_attr(user)
 		for claim, user_attr in settings.TOKEN_CLAIM_USER_ATTRIBUTE_MAP.items()
 	}
 
 
 def get_access_token_from_refresh_token(refresh_token: str) -> tuple[str, dict]:
+	from django.conf import settings
+
 	decoded = decode_token(refresh_token, token_type=TokenTypes.REFRESH, verify=True)
-	payload = {
-		claim: decoded.get(claim) for claim in settings.TOKEN_CLAIM_USER_ATTRIBUTE_MAP
-	}
+	payload = {claim: decoded.get(claim) for claim in settings.TOKEN_CLAIM_USER_ATTRIBUTE_MAP}
 	return encode_token(payload, TokenTypes.ACCESS)
 
 
@@ -72,9 +62,12 @@ def encode_token(
 	payload: dict,
 	token_type: TokenTypes,
 	jti: UUID | None = None,
-	json_encoder: type[JSONEncoder] | None = None,
+	json_encoder: type[DjangoJSONEncoder] | None = None,
 	**additional_headers: Any,
 ) -> tuple[str, dict]:
+	from django.conf import settings
+	from django.utils import timezone
+
 	now = timezone.now()
 	if token_type == TokenTypes.REFRESH:
 		expiry = now + settings.JWT_REFRESH_TOKEN_LIFETIME
@@ -102,10 +95,10 @@ def encode_token(
 
 
 def decode_token(token: str, token_type: TokenTypes, verify: bool = True) -> dict:
+	from django.conf import settings
+
 	if verify is True:
-		decoded = jwt.decode(
-			token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
-		)
+		decoded = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
 		_verify_exp(decoded)
 		_verify_jti(decoded)
 		_verify_token_type(decoded, token_type)
@@ -115,6 +108,9 @@ def decode_token(token: str, token_type: TokenTypes, verify: bool = True) -> dic
 
 
 def _verify_exp(payload: dict) -> None:
+	from django.utils import timezone
+	from jwt import ExpiredSignatureError
+
 	now = timezone.now()
 	token_expiry_unix_time = payload['exp']
 	token_expiry = timezone.make_aware(datetime.fromtimestamp(token_expiry_unix_time))
@@ -123,6 +119,10 @@ def _verify_exp(payload: dict) -> None:
 
 
 def _verify_jti(payload: dict) -> None:
+	from jwt import InvalidKeyError, InvalidTokenError
+
+	from tokens.models import BlacklistedToken, TrackedToken
+
 	jti = payload.get('jti')
 	user = payload.get('user_id')
 
@@ -134,13 +134,17 @@ def _verify_jti(payload: dict) -> None:
 
 
 def _verify_token_type(payload: dict, token_type: TokenTypes) -> None:
+	from jwt import InvalidKeyError, InvalidTokenError
+
 	if 'token_type' not in payload:
 		raise InvalidKeyError('Missing token type in JWT.')
 	if payload['token_type'] != token_type:
 		raise InvalidTokenError('Incorrect token type in JWT.')
 
 
-def set_token_claims_to_user(user: AbstractBaseUser, token: dict) -> None:
+def set_token_claims_to_user(user, token: dict) -> None:
+	from django.conf import settings
+
 	for claim, user_attribute in settings.TOKEN_CLAIM_USER_ATTRIBUTE_MAP.items():
 		if isinstance(user_attribute, str):
 			setattr(user, user_attribute, token.get(claim))
@@ -148,27 +152,30 @@ def set_token_claims_to_user(user: AbstractBaseUser, token: dict) -> None:
 			setattr(user, claim, token.get(claim))
 
 
-def get_user_from_token(token: str) -> AbstractBaseUser:
+def get_user_from_token(token: str):
+	from django.contrib.auth import get_user_model
+	from jwt import PyJWTError
+
 	try:
 		access_token = decode_token(token, token_type=TokenTypes.ACCESS, verify=True)
 	except PyJWTError as e:
-		raise AuthenticationError(e)
+		raise ValueError(f'Authentication failed: {e}')
 
 	user_id = access_token.get('user_id')
 	if user_id is None:
-		raise AuthenticationError('User ID not found in token.')
+		raise ValueError('User ID not found in token.')
 
+	User = get_user_model()
 	try:
 		user = User.objects.get(id=user_id)
 	except User.DoesNotExist:
-		raise AuthenticationError('User not found.')
+		raise ValueError('User not found.')
 
 	set_token_claims_to_user(user, access_token)
-
 	return user
 
 
-def get_obtain_token_pair(user: AbstractBaseUser) -> tuple[str, str]:
+def get_obtain_token_pair(user) -> dict:
 	"""
 	Get a pair of tokens (access and refresh) for the user.
 	"""
@@ -186,7 +193,6 @@ def get_obtain_token_pair(user: AbstractBaseUser) -> tuple[str, str]:
 		jti=_jti,
 		json_encoder=TokenUserEncoder,
 	)
-	# Create tracked token
 
 	try:
 		create_tracked_token(
@@ -196,7 +202,6 @@ def get_obtain_token_pair(user: AbstractBaseUser) -> tuple[str, str]:
 			refresh_token=refresh_token,
 			access_token=access_token,
 		)
-		# If the tracked token is created successfully, return the tokens
 		return {
 			'access_token': access_token,
 			'refresh_token': refresh_token,
@@ -207,17 +212,18 @@ def get_obtain_token_pair(user: AbstractBaseUser) -> tuple[str, str]:
 		raise ValueError(f'Failed to create tracked token: {e!s}')
 
 
-def create_tracked_token(
-	user, jti: str, exp: int, refresh_token: str, access_token: str
-) -> TrackedToken:
+def create_tracked_token(user, jti: str, exp: int, refresh_token: str, access_token: str):
 	"""
 	Create a tracked token for the user.
 	"""
+	from django.utils.timezone import make_aware
+
+	from tokens.models import TrackedToken
+
 	jti = TrackedToken.hasher(jti)
 	refresh_token = TrackedToken.hasher(refresh_token)
 	access_token = TrackedToken.hasher(access_token)
 
-	# Convert Unix timestamp to a timezone-aware datetime object
 	_exp = make_aware(datetime.fromtimestamp(exp))
 	return TrackedToken.objects.get_or_create(
 		user=user,
@@ -228,22 +234,24 @@ def create_tracked_token(
 	)
 
 
-def create_blacklisted_token(user, token: TrackedToken) -> BlacklistedToken:
+def create_blacklisted_token(user, token):
 	"""
 	Create a blacklisted token for the user.
 	"""
+	from tokens.models import BlacklistedToken
+
 	return BlacklistedToken.objects.create(user=user, token=token)
 
 
-def blacklist_token(user: AbstractBaseUser, token: str) -> None:
+def blacklist_token(user, token: str) -> None:
 	"""
 	Blacklist a token for the user.
 	"""
-	# Decode the token to extract the jti
+	from tokens.models import TrackedToken
+
 	decoded = decode_token(token, token_type=TokenTypes.REFRESH, verify=True)
 	jti = decoded.get('jti')
 
-	
 	if not jti:
 		raise ValueError('Invalid token: Missing jti')
 	jti = TrackedToken.hasher(jti)
@@ -251,6 +259,29 @@ def blacklist_token(user: AbstractBaseUser, token: str) -> None:
 	if tracked_token:
 		create_blacklisted_token(user, tracked_token)
 		tracked_token.soft_delete()
-
 	else:
 		raise ValueError('Token not found in tracked tokens')
+
+
+def blacklist_all_tokens(user):
+	"""
+	Blacklist all tracked tokens for the given user.
+	"""
+	from django.db import transaction
+
+	from tokens.models import BlacklistedToken, TrackedToken
+
+	tracked_tokens = TrackedToken.objects.filter(user=user, is_deleted=False)
+	blacklisted = []
+
+	for tracked_token in tracked_tokens:
+		if not BlacklistedToken.objects.filter(token=tracked_token).exists():
+			blacklisted.append(BlacklistedToken(user=user, token=tracked_token))
+			tracked_token.soft_delete()
+
+	if not blacklisted:
+		return 0
+
+	with transaction.atomic():
+		BlacklistedToken.objects.bulk_create(blacklisted)
+	return len(blacklisted)

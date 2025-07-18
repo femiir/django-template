@@ -13,7 +13,7 @@ wheels/
 .env
 
 #  MacOS
-.DS_Store
+*.DS_Store
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -210,3 +210,57 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+bucket/
+complex_state.py
+
+
+
+
+# class NotificationVerb(models.TextChoices):
+# 	# Course-related
+# 	ENROLLED = 'enrolled', 'Enrolled'
+# 	COURSE_STARTED = 'course_started', 'Course Started'
+# 	COURSE_COMPLETED = 'course_completed', 'Course Completed'
+# 	COURSE_UPDATED = 'course_updated', 'Course Updated'
+
+# 	# Assignment/Quiz
+# 	ASSIGNMENT_ASSIGNED = 'assignment_assigned', 'Assignment Assigned'
+# 	ASSIGNMENT_SUBMITTED = 'assignment_submitted', 'Assignment Submitted'
+# 	ASSIGNMENT_GRADED = 'assignment_graded', 'Assignment Graded'
+# 	QUIZ_AVAILABLE = 'quiz_available', 'Quiz Available'
+# 	QUIZ_SUBMITTED = 'quiz_submitted', 'Quiz Submitted'
+
+# 	# Progress/Achievement
+# 	LESSON_COMPLETED = 'lesson_completed', 'Lesson Completed'
+# 	CERTIFICATE_EARNED = 'certificate_earned', 'Certificate Earned'
+# 	BADGE_EARNED = 'badge_earned', 'Badge Earned'
+# 	MILESTONE_REACHED = 'milestone_reached', 'Milestone Reached'
+
+# 	# Discussion/Social
+# 	DISCUSSION_REPLY = 'discussion_reply', 'Discussion Reply'
+# 	QUESTION_ASKED = 'question_asked', 'Question Asked'
+# 	QUESTION_ANSWERED = 'question_answered', 'Question Answered'
+# 	PEER_REVIEW = 'peer_review', 'Peer Review'
+
+# 	# Reminders/Deadlines
+# 	DEADLINE_REMINDER = 'deadline_reminder', 'Deadline Reminder'
+# 	OVERDUE_ASSIGNMENT = 'overdue_assignment', 'Overdue Assignment'
+# 	UPCOMING_EXAM = 'upcoming_exam', 'Upcoming Exam'
+
+# 	# Instructor/Admin
+# 	FEEDBACK_RECEIVED = 'feedback_received', 'Feedback Received'
+# 	ANNOUNCEMENT = 'announcement', 'Announcement'
+# 	MEETING_SCHEDULED = 'meeting_scheduled', 'Meeting Scheduled'
+
+# 	# System
+# 	PAYMENT_DUE = 'payment_due', 'Payment Due'
+# 	SUBSCRIPTION_EXPIRED = 'subscription_expired', 'Subscription Expired'
+# 	WELCOME = 'welcome', 'Welcome'
+# 	OTHER = 'other', 'Other'
+
+# 	@classmethod
+# 	def get_template(cls, verb=None):
+# 		"""
+# 		Return the path to the generic notification email template.
+# 		"""
+# 		return 'mails/notifications/notification.html'  # Single template for all

@@ -90,6 +90,7 @@ class VendorProfile(TimeStampedSoftDeleteModel):
 	user = models.OneToOneField(
 		User, on_delete=models.CASCADE, related_name='vendorprofile'
 	)
+	
 
 	def __str__(self):
 		return self.user.email
