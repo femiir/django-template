@@ -31,7 +31,12 @@ class NotificationConsumer(AsyncWebsocketConsumer):
 
 			await self.accept()
 
+			# Join user group
 			await self.channel_layer.group_add(self.user_group, self.channel_name)
+
+			# Join monitoring group for dashboard
+			await self.channel_layer.group_add('websocket_monitoring', self.channel_name)
+
 			await async_set_user_online(self.user_id)
 
 			# Send connection confirmation
@@ -48,6 +53,15 @@ class NotificationConsumer(AsyncWebsocketConsumer):
 				},
 			)
 
+			# Broadcast to monitoring dashboard
+			await WebSocketUtils.broadcast_monitoring(
+				'user_connected',
+				{
+					'user_id': self.user_id,
+					'session_id': self.session_id,
+				},
+			)
+
 			logger.info(f'✅ User {self.user_id} connected (session: {self.session_id})')
 
 		except Exception as e:
@@ -61,8 +75,21 @@ class NotificationConsumer(AsyncWebsocketConsumer):
 				# Leave user group
 				await self.channel_layer.group_discard(self.user_group, self.channel_name)
 
+				# Leave monitoring group
+				await self.channel_layer.group_discard('websocket_monitoring', self.channel_name)
+
 				# Mark user as offline
 				await async_set_user_offline(self.user_id)
+
+				# Broadcast to monitoring dashboard
+				await WebSocketUtils.broadcast_monitoring(
+					'user_disconnected',
+					{
+						'user_id': self.user_id,
+						'session_id': self.session_id,
+						'close_code': close_code,
+					},
+				)
 
 				logger.info(f'✅ User {self.user_id} disconnected (code: {close_code})')
 
@@ -144,7 +171,33 @@ class NotificationConsumer(AsyncWebsocketConsumer):
 					'data': event['data'],
 				},
 			)
+
+			# Broadcast to monitoring dashboard
+			await WebSocketUtils.broadcast_monitoring(
+				'notification_sent',
+				{
+					'user_id': self.user_id,
+					'session_id': self.session_id,
+					'notification_data': event['data'],
+				},
+			)
+
 			logger.debug(f'✅ Notification forwarded to user {self.user_id}')
 
 		except Exception as e:
 			logger.error(f'❌ Error forwarding notification to user {self.user_id}: {e}')
+
+	async def monitoring_event(self, event):
+		"""Receive and forward monitoring events to dashboard"""
+		try:
+			await WebSocketUtils.safe_send_json(
+				self,
+				{
+					'type': 'monitoring',
+					'data': event['data'],
+				},
+			)
+			logger.debug('📡 Monitoring event forwarded to dashboard')
+
+		except Exception as e:
+			logger.error(f'❌ Error forwarding monitoring event: {e}')

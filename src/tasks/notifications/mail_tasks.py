@@ -26,6 +26,6 @@ def send_email_task(user_email, template_type, category, **kwargs) -> dict:
 			html_content=html_content,
 			subject=kwargs.get('subject', 'mail from a trusted source'),
 		)
-		logger.info(f'OTP email sent to {user_email} with code {kwargs.get("otp_code")}')
+		logger.info(f'Email sent to {user_email} with code {kwargs.get("otp_code")}')
 	except Exception as e:
 		logger.error(f'Failed to send email: {e!s}')

@@ -1,5 +1,7 @@
 import logging
 
+from asgiref.sync import async_to_sync
+
 from common.websocket.notifier import WebSocketNotifier
 from tasks.notifications.mail_tasks import send_email_task
 from tasks.notifications.sms_tasks import send_sms_task
@@ -89,16 +91,23 @@ class DeliveryHandlers:
 				'type': 'new_notification',
 				'timestamp': notification.created_at.isoformat(),
 			}
-			success = WebSocketNotifier.send_to_user(
+
+			# Use async_to_sync to properly call the async function
+			success = async_to_sync(WebSocketNotifier.send_to_user)(
 				user_id=user.id,
 				message_data=notification_data,
 				message_type='notification_message',
 			)
+
 			if success:
 				channel.status = 'sent'
 				logger.info(f'✅ Push notification sent to online user {user.id} via WebSocket')
 			else:
-				pass
+				logger.warning(f'⚠️ Failed to send push notification to user {user.id} - user may be offline')
+				channel.status = 'failed'
+
+			channel.save()
+
 		except Exception as e:
 			logger.error('Failed to send push notification: %s', str(e))
 			channel.status = 'failed'

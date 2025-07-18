@@ -69,6 +69,3 @@ class WebSocketNotifier:
 		except Exception as e:
 			logger.error(f'❌ Error sending to group {group_name}: {e}')
 			return False
-		except Exception as e:
-			logger.error(f'❌ Error sending to group {group_name}: {e}')
-			return False

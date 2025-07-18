@@ -88,6 +88,26 @@
                 </div>
             </div>
 
+            <!-- Monitoring Controls -->
+            <div class="bg-gradient-to-br from-cyan-900/30 to-cyan-800/20 border border-cyan-600/50 rounded-xl p-6 shadow-xl backdrop-blur-sm">
+                <h3 class="text-lg font-bold text-cyan-300 mb-4 text-center flex items-center justify-center gap-2">
+                    <span class="text-xl">📊</span> Real-time Monitoring
+                </h3>
+                <div class="space-y-3">
+                    <button type="button" id="toggleMonitoringBtn" 
+                            class="w-full bg-gradient-to-r from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800 text-white font-medium rounded-lg px-4 py-2.5 text-sm transition-all transform hover:scale-105 shadow-lg">
+                        📡 Monitoring: ON
+                    </button>
+                    <div class="text-xs text-gray-400 text-center">
+                        <div class="mb-2">Event Filters:</div>
+                        <div class="grid grid-cols-2 gap-1 text-xs">
+                            <button id="filter-connections" class="bg-emerald-600/30 text-emerald-300 px-2 py-1 rounded text-xs">🟢 Connections</button>
+                            <button id="filter-notifications" class="bg-violet-600/30 text-violet-300 px-2 py-1 rounded text-xs">📡 Messages</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
 
         </nav>
 
@@ -148,11 +168,20 @@
     </div>
 
     <script>
-        // Basic WebSocket Dashboard functionality
+        // Enhanced WebSocket Dashboard functionality for real-time monitoring
         let socket = null;
         let messageCounter = 0;
         let detailedView = false;
         let startTime = Date.now();
+        let monitoringEnabled = true;
+        let eventFilters = {
+            user_connected: true,
+            user_disconnected: true,
+            notification_sent: true,
+            connection_established: true,
+            ping_pong: true,
+            errors: true
+        };
 
         // Update uptime counter
         setInterval(() => {
@@ -163,17 +192,15 @@
             document.getElementById('uptime').textContent = `${hours}:${minutes}:${seconds}`;
         }, 1000);
 
-        // Add message to console
-        function addMessage(type, content, details = null) {
+        // Enhanced message handling with monitoring support
+        function addMessage(type, content, details = null, isMonitoring = false) {
             const messagesDiv = document.getElementById('messages');
             const welcomeMessage = document.getElementById('welcomeMessage');
             
             // Hide welcome message when first message arrives
             if (welcomeMessage && welcomeMessage.style.display !== 'none') {
                 welcomeMessage.style.display = 'none';
-                // Remove welcome message from DOM to prevent layout issues
                 welcomeMessage.remove();
-                // Add class to ensure proper layout for messages
                 messagesDiv.classList.add('has-messages');
             }
 
@@ -183,42 +210,85 @@
             const timestamp = new Date().toLocaleTimeString();
             let icon, bgColor, borderColor, textColor;
 
-            switch(type) {
-                case 'success':
-                    icon = '✅';
-                    bgColor = 'bg-green-900/30';
-                    borderColor = 'border-green-400';
-                    textColor = 'text-green-300';
-                    break;
-                case 'error':
-                    icon = '❌';
-                    bgColor = 'bg-red-900/30';
-                    borderColor = 'border-red-400';
-                    textColor = 'text-red-300';
-                    break;
-                case 'warning':
-                    icon = '⚠️';
-                    bgColor = 'bg-yellow-900/30';
-                    borderColor = 'border-yellow-400';
-                    textColor = 'text-yellow-300';
-                    break;
-                case 'info':
-                    icon = 'ℹ️';
-                    bgColor = 'bg-blue-900/30';
-                    borderColor = 'border-blue-400';
-                    textColor = 'text-blue-300';
-                    break;
-                case 'message':
-                    icon = '💬';
-                    bgColor = 'bg-purple-900/30';
-                    borderColor = 'border-purple-400';
-                    textColor = 'text-purple-300';
-                    break;
-                default:
-                    icon = '📝';
-                    bgColor = 'bg-gray-900/30';
-                    borderColor = 'border-gray-400';
-                    textColor = 'text-gray-300';
+            // Handle monitoring messages with special styling
+            if (isMonitoring) {
+                messageElement.classList.add('monitoring-event');
+                switch(type) {
+                    case 'user_connected':
+                        icon = '🟢';
+                        bgColor = 'bg-emerald-900/40';
+                        borderColor = 'border-emerald-400';
+                        textColor = 'text-emerald-300';
+                        break;
+                    case 'user_disconnected':
+                        icon = '🔴';
+                        bgColor = 'bg-rose-900/40';
+                        borderColor = 'border-rose-400';
+                        textColor = 'text-rose-300';
+                        break;
+                    case 'notification_sent':
+                        icon = '📡';
+                        bgColor = 'bg-violet-900/40';
+                        borderColor = 'border-violet-400';
+                        textColor = 'text-violet-300';
+                        break;
+                    case 'monitoring':
+                        icon = '📊';
+                        bgColor = 'bg-cyan-900/40';
+                        borderColor = 'border-cyan-400';
+                        textColor = 'text-cyan-300';
+                        break;
+                    default:
+                        icon = '📡';
+                        bgColor = 'bg-gray-900/40';
+                        borderColor = 'border-gray-400';
+                        textColor = 'text-gray-300';
+                }
+            } else {
+                // Regular message styling
+                switch(type) {
+                    case 'success':
+                        icon = '✅';
+                        bgColor = 'bg-green-900/30';
+                        borderColor = 'border-green-400';
+                        textColor = 'text-green-300';
+                        break;
+                    case 'error':
+                        icon = '❌';
+                        bgColor = 'bg-red-900/30';
+                        borderColor = 'border-red-400';
+                        textColor = 'text-red-300';
+                        break;
+                    case 'warning':
+                        icon = '⚠️';
+                        bgColor = 'bg-yellow-900/30';
+                        borderColor = 'border-yellow-400';
+                        textColor = 'text-yellow-300';
+                        break;
+                    case 'info':
+                        icon = 'ℹ️';
+                        bgColor = 'bg-blue-900/30';
+                        borderColor = 'border-blue-400';
+                        textColor = 'text-blue-300';
+                        break;
+                    case 'message':
+                        icon = '💬';
+                        bgColor = 'bg-purple-900/30';
+                        borderColor = 'border-purple-400';
+                        textColor = 'text-purple-300';
+                        break;
+                    case 'pong':
+                        icon = '🏓';
+                        bgColor = 'bg-indigo-900/30';
+                        borderColor = 'border-indigo-400';
+                        textColor = 'text-indigo-300';
+                        break;
+                    default:
+                        icon = '📝';
+                        bgColor = 'bg-gray-900/30';
+                        borderColor = 'border-gray-400';
+                        textColor = 'text-gray-300';
+                }
             }
 
             messageElement.className += ` ${bgColor} ${borderColor}`;
@@ -227,8 +297,9 @@
                 <div class="text-lg flex-shrink-0">${icon}</div>
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2 mb-1">
-                        <span class="${textColor} font-semibold text-xs uppercase tracking-wide">${type}</span>
+                        <span class="${textColor} font-semibold text-xs uppercase tracking-wide">${isMonitoring ? 'MONITOR' : type}</span>
                         <span class="text-gray-500 text-xs">${timestamp}</span>
+                        ${isMonitoring ? '<span class="text-xs bg-cyan-600/30 text-cyan-300 px-2 py-0.5 rounded-full">LIVE</span>' : ''}
                     </div>
                     <div class="text-gray-200 break-words">${content}</div>
             `;
@@ -246,6 +317,98 @@
             // Update counter
             messageCounter++;
             document.getElementById('messageCounter').textContent = messageCounter;
+        }
+
+        // Enhanced message handler for different WebSocket message types
+        function handleWebSocketMessage(data) {
+            const messageType = data.type;
+            
+            switch(messageType) {
+                case 'connection_established':
+                    addMessage('success', `Connection established - User: ${data.data.user_id}, Session: ${data.data.session_id}`, data);
+                    if (data.data) {
+                        document.getElementById('userIdDisplay').textContent = data.data.user_id || '-';
+                        document.getElementById('sessionIdDisplay').textContent = 
+                            data.data.session_id ? data.data.session_id.slice(0, 8) + '...' : '-';
+                    }
+                    break;
+                    
+                case 'pong':
+                    addMessage('pong', `Pong received from session: ${data.data?.session_id || 'unknown'}`, data);
+                    break;
+                    
+                case 'notification':
+                    addMessage('message', `Notification: ${data.data?.message || JSON.stringify(data.data)}`, data);
+                    break;
+                    
+                case 'monitoring':
+                    handleMonitoringEvent(data.data);
+                    break;
+                    
+                case 'error':
+                    addMessage('error', `Server error: ${data.data?.message || 'Unknown error'}`, data);
+                    break;
+                    
+                default:
+                    addMessage('message', `${messageType}: ${JSON.stringify(data.data || {})}`, data);
+            }
+        }
+
+        // Handle monitoring events from other WebSocket connections
+        function handleMonitoringEvent(monitoringData) {
+            if (!monitoringEnabled) return;
+            
+            const eventType = monitoringData.event;
+            const timestamp = monitoringData.timestamp;
+            
+            // Check if this event type is filtered
+            if (!eventFilters[eventType] && eventFilters[eventType] !== undefined) {
+                return;
+            }
+            
+            let content, details;
+            
+            switch(eventType) {
+                case 'user_connected':
+                    content = `🟢 User ${monitoringData.user_id} connected (Session: ${monitoringData.session_id})`;
+                    details = monitoringData;
+                    addMessage('user_connected', content, details, true);
+                    break;
+                    
+                case 'user_disconnected':
+                    content = `🔴 User ${monitoringData.user_id} disconnected (Code: ${monitoringData.close_code})`;
+                    details = monitoringData;
+                    addMessage('user_disconnected', content, details, true);
+                    break;
+                    
+                case 'notification_sent':
+                    const notifPreview = monitoringData.notification_data?.message || 
+                                       monitoringData.notification_data?.verb || 
+                                       'Notification';
+                    content = `📡 Notification sent to User ${monitoringData.user_id}: ${notifPreview}`;
+                    details = monitoringData;
+                    addMessage('notification_sent', content, details, true);
+                    break;
+                    
+                default:
+                    content = `📊 ${eventType}: ${JSON.stringify(monitoringData)}`;
+                    addMessage('monitoring', content, monitoringData, true);
+            }
+        }
+
+        // Filter management
+        function toggleEventFilter(eventType) {
+            eventFilters[eventType] = !eventFilters[eventType];
+            updateFilterButtons();
+        }
+
+        function updateFilterButtons() {
+            // This function would update filter button states if we had them in the UI
+        }
+
+        function toggleMonitoring() {
+            monitoringEnabled = !monitoringEnabled;
+            addMessage('info', `Global monitoring ${monitoringEnabled ? 'enabled' : 'disabled'}`);
         }
 
         // Connection handlers
@@ -279,16 +442,10 @@
                 socket.onmessage = (event) => {
                     try {
                         const data = JSON.parse(event.data);
-                        addMessage('message', `Received: ${data.type || 'Unknown'}`, data);
-                        
-                        // Handle connection_established message to show user details
-                        if (data.type === 'connection_established' && data.data) {
-                            document.getElementById('userIdDisplay').textContent = data.data.user_id || '-';
-                            document.getElementById('sessionIdDisplay').textContent = 
-                                data.data.session_id ? data.data.session_id.slice(0, 8) + '...' : '-';
-                        }
+                        handleWebSocketMessage(data);
                     } catch (e) {
-                        addMessage('message', `Received: ${event.data}`);
+                        addMessage('error', `Failed to parse message: ${e.message}`);
+                        addMessage('message', `Raw data: ${event.data}`);
                     }
                 };
 
@@ -362,6 +519,43 @@
             addMessage('info', `Detail view ${detailedView ? 'enabled' : 'disabled'}`);
         });
 
+        document.getElementById('toggleMonitoringBtn').addEventListener('click', () => {
+            toggleMonitoring();
+            const btn = document.getElementById('toggleMonitoringBtn');
+            btn.textContent = monitoringEnabled ? '📡 Monitoring: ON' : '📡 Monitoring: OFF';
+            btn.className = btn.className.replace(/from-\w+-600/, monitoringEnabled ? 'from-cyan-600' : 'from-gray-600');
+            btn.className = btn.className.replace(/to-\w+-700/, monitoringEnabled ? 'to-cyan-700' : 'to-gray-700');
+        });
+
+        // Event filter buttons
+        document.getElementById('filter-connections').addEventListener('click', () => {
+            const connectionsEnabled = eventFilters.user_connected && eventFilters.user_disconnected;
+            eventFilters.user_connected = !connectionsEnabled;
+            eventFilters.user_disconnected = !connectionsEnabled;
+            
+            const btn = document.getElementById('filter-connections');
+            if (connectionsEnabled) {
+                btn.className = btn.className.replace('bg-emerald-600/30 text-emerald-300', 'bg-gray-600/30 text-gray-400');
+                btn.textContent = '⚫ Connections';
+            } else {
+                btn.className = btn.className.replace('bg-gray-600/30 text-gray-400', 'bg-emerald-600/30 text-emerald-300');
+                btn.textContent = '🟢 Connections';
+            }
+        });
+
+        document.getElementById('filter-notifications').addEventListener('click', () => {
+            eventFilters.notification_sent = !eventFilters.notification_sent;
+            
+            const btn = document.getElementById('filter-notifications');
+            if (eventFilters.notification_sent) {
+                btn.className = btn.className.replace('bg-gray-600/30 text-gray-400', 'bg-violet-600/30 text-violet-300');
+                btn.textContent = '📡 Messages';
+            } else {
+                btn.className = btn.className.replace('bg-violet-600/30 text-violet-300', 'bg-gray-600/30 text-gray-400');
+                btn.textContent = '⚫ Messages';
+            }
+        });
+
         document.getElementById('toggleToken').addEventListener('click', () => {
             const tokenInput = document.getElementById('authToken');
             const eye = document.getElementById('tokenEye');
@@ -400,7 +594,7 @@
             }
         }
 
-        // Add CSS for fade-in animation
+        // Add CSS for fade-in animation and monitoring styles
         const style = document.createElement('style');
         style.textContent = `
             @keyframes fade-in {
@@ -417,6 +611,27 @@
             #messages.has-messages {
                 justify-content: flex-start !important;
                 align-items: stretch !important;
+            }
+            .monitoring-event {
+                position: relative;
+                overflow: hidden;
+            }
+            .monitoring-event::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 2px;
+                background: linear-gradient(90deg, 
+                    transparent 0%, 
+                    rgba(34, 211, 238, 0.5) 50%, 
+                    transparent 100%);
+                animation: pulse 2s ease-in-out infinite;
+            }
+            @keyframes pulse {
+                0%, 100% { opacity: 0.3; }
+                50% { opacity: 1; }
             }
         `;
         document.head.appendChild(style);

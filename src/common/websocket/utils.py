@@ -6,6 +6,9 @@ import json
 import logging
 import uuid
 from datetime import datetime
+from typing import Any
+
+from channels.layers import get_channel_layer
 
 logger = logging.getLogger(__name__)
 
@@ -43,3 +46,36 @@ class WebSocketUtils:
 			return None, 'Invalid JSON'
 		except Exception as e:
 			return None, f'Parse error: {e}'
+
+	@staticmethod
+	async def broadcast_monitoring(
+		event_type: str,
+		data: dict[str, Any],
+		message_type: str = 'monitoring_event',
+	) -> bool:
+		"""
+		Broadcast WebSocket server events to the monitoring dashboard.
+
+		Args:
+		    event_type: Type of event (e.g., 'user_connected', 'notification_sent')
+		    data: Event data to broadcast
+		    message_type: Channel layer message type
+		"""
+		try:
+			channel_layer = get_channel_layer()
+			monitoring_data = {'event': event_type, 'timestamp': WebSocketUtils.get_current_timestamp(), **data}
+
+			await channel_layer.group_send(
+				'websocket_monitoring',
+				{
+					'type': message_type,
+					'data': monitoring_data,
+				},
+			)
+
+			logger.debug(f'📡 Broadcasted monitoring event: {event_type}')
+			return True
+
+		except Exception as e:
+			logger.error(f'❌ Error broadcasting monitoring event: {e}')
+			return False
